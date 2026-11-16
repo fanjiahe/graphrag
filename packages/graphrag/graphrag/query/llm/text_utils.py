@@ -63,7 +63,19 @@ def try_parse_json_object(input: str, verbose: bool = True) -> tuple[str, dict]:
 
     pattern = r"\{(.*)\}"
     match = re.search(pattern, input, re.DOTALL)
-    input = "{" + match.group(1) + "}" if match else input
+    extracted = "{" + match.group(1) + "}" if match else input
+
+    # The cleanup below turns every backslash into a space. A model often
+    # wraps valid JSON in a sentence or a code fence; that slice already
+    # parses and must be kept intact.
+    try:
+        parsed = json.loads(extracted)
+    except json.JSONDecodeError:
+        parsed = None
+    if isinstance(parsed, dict):
+        return extracted, parsed
+
+    input = extracted
 
     # Clean up json string.
     input = (
